@@ -5,6 +5,7 @@ This repository contains Kotlin implementations of classic data structures and a
 - Quick Sort (`QuickSort.kt`)
 - Binary Search (`BinarySearch.kt`)
 - Binary Tree Traversals: Pre-Order, In-Order, Post-Order (`TraversingBinaryTrees.kt`)
+- Binary Search Tree: Search, Insert, Remove (`BinarySearchTree.kt`)
 
 Below you'll find for each algorithm:
 - High-level description
@@ -135,10 +136,6 @@ Narrow left half
  lo=3 hi=3 mid=3 (32) -> success
 ```
 
----
-## Binary Tree Traversals (Pre-Order, In-Order, Post-Order)
-
-Traverse all nodes of a binary tree in different systematic orders. These depth-first traversals are fundamental building blocks for many tree-based algorithms (expression evaluation, serialization, BST operations, etc.). Implemented in `TraversingBinaryTrees.kt` using simple recursion.
 
 ### Traversal Orders
 Given a node N, Left child L, Right child R:
@@ -224,6 +221,311 @@ Post-Order: 4 5 2 6 3 1
   - **Post-order traversal** (used for deletion): Delete files first, then folders to avoid deleting non-empty directories
 - Expression Evaluation:
   - **In-order traversal**: To reconstruct the original expression
+
+---
+## Binary Search Tree (BST)
+
+A Binary Search Tree is a binary tree data structure where each node has at most two children, and for every node:
+- All values in the left subtree are **less than** the node's value
+- All values in the right subtree are **greater than** the node's value
+
+This property enables efficient searching, insertion, and deletion operations.
+
+### Operations Implemented
+1. **Search**: Find a node with a specific value
+2. **Insert**: Add a new value while maintaining BST property
+3. **Remove**: Delete a node (handling 4 cases: leaf, one child, two children)
+4. **FindMin**: Locate the minimum value in a subtree (helper for removal)
+
+### Complexities
+**Balanced BST (e.g., AVL, Red-Black Tree):**
+- Search: O(log n) average/best, O(n) worst (skewed tree)
+- Insert: O(log n) average/best, O(n) worst (skewed tree)
+- Remove: O(log n) average/best, O(n) worst (skewed tree)
+- Space: O(h) for recursion stack, where h = tree height
+
+**Worst Case (Skewed Tree)**: When insertions are sorted (ascending/descending), the tree becomes a linked list → O(n) operations.
+
+---
+
+### Search Operation
+
+#### Idea
+1. Start at root
+2. If value equals current node → found
+3. If value < current node → search left subtree
+4. If value > current node → search right subtree
+5. If reach null → value not in tree
+
+#### Example: Search for 32 in BST
+```
+Initial BST:
+        50
+       /  \
+     30    70
+    /  \   / \
+   20  40 60 80
+
+Searching for 32:
+Step 1: Start at 50, 32 < 50 → go left
+Step 2: At 30, 32 > 30 → go right
+Step 3: At 40, 32 < 40 → go left
+Step 4: Left child is null → 32 NOT FOUND
+
+Searching for 40:
+Step 1: Start at 50, 40 < 50 → go left
+Step 2: At 30, 40 > 30 → go right
+Step 3: At 40, 40 == 40 → FOUND!
+```
+
+#### Mermaid Diagram (Search Path for 40)
+```mermaid
+graph TD
+  A[50<br/>32 < 50, go left]
+  A -->|search| B[30<br/>40 > 30, go right]
+  A -.-> C[70]
+  B -->|search| D[20]
+  B -->|search| E[40<br/>FOUND!]
+  C -.-> F[60]
+  C -.-> G[80]
+  
+  style A fill:#ffebcc
+  style B fill:#ffebcc
+  style E fill:#90EE90
+```
+
+---
+
+### Insert Operation
+
+#### Idea
+1. Start at root
+2. If tree is empty → create new root
+3. If value < current node → recursively insert in left subtree
+4. If value > current node → recursively insert in right subtree
+5. If value == current node → typically ignore (no duplicates)
+
+#### Example: Insert 35 into BST
+```
+Initial BST:
+        50
+       /  \
+     30    70
+    /  \   / \
+   20  40 60 80
+
+Insert 35:
+Step 1: Start at 50, 35 < 50 → go left
+Step 2: At 30, 35 > 30 → go right
+Step 3: At 40, 35 < 40 → go left
+Step 4: Left is null → insert 35 as left child of 40
+
+Result:
+        50
+       /  \
+     30    70
+    /  \   / \
+   20  40 60 80
+       /
+      35
+```
+
+#### ASCII Visualization (Insert Sequence: 50, 30, 70, 20, 40)
+```
+Insert 50:
+  50
+
+Insert 30:
+  50
+  /
+ 30
+
+Insert 70:
+  50
+  / \
+ 30  70
+
+Insert 20:
+    50
+   / \
+  30  70
+ /
+20
+
+Insert 40:
+    50
+   / \
+  30  70
+ / \
+20  40
+```
+
+---
+
+### Remove Operation
+
+#### Idea
+Removal has **4 cases**:
+
+1. **Node not found**: Return null
+2. **Leaf node** (no children): Simply remove (return null)
+3. **One child**: Replace node with its child
+4. **Two children**: 
+   - Find in-order successor (minimum value in right subtree)
+   - Replace node's value with successor's value
+   - Delete successor from right subtree
+
+#### Example: Remove 30 (two children)
+```
+Initial BST:
+        50
+       /  \
+     30    70
+    /  \   / \
+   20  40 60 80
+
+Remove 30 (has two children):
+Step 1: Find node with value 30
+Step 2: Node has both left (20) and right (40) children
+Step 3: Find minimum in right subtree: 40 (no left child)
+Step 4: Replace 30's value with 40
+Step 5: Delete the duplicate 40 from right subtree
+
+Result:
+        50
+       /  \
+     40    70
+    /     / \
+   20    60 80
+```
+
+#### Example: Remove 70 (two children)
+```
+Initial BST:
+        50
+       /  \
+     30    70
+    /  \   / \
+   20  40 60 80
+
+Remove 70:
+Step 1: Find minimum in right subtree of 70 → 80
+Step 2: Replace 70 with 80
+Step 3: Delete 80 from its original position
+
+Result:
+        50
+       /  \
+     30    80
+    /  \   /
+   20  40 60
+```
+
+#### Example: Remove 20 (leaf node)
+```
+Initial BST:
+        50
+       /  \
+     30    70
+    /  \   / \
+   20  40 60 80
+
+Remove 20 (leaf):
+Simply remove it.
+
+Result:
+        50
+       /  \
+     30    70
+      \   / \
+      40 60 80
+```
+
+#### Mermaid Diagram (Removal Cases)
+```mermaid
+graph TD
+  A[Remove Node]
+  A --> B{How many children?}
+  B -->|0 children<br/>Leaf| C[Return null]
+  B -->|1 child| D[Return the child<br/>bypass node]
+  B -->|2 children| E[Find in-order successor<br/>min in right subtree]
+  E --> F[Replace node value<br/>with successor value]
+  F --> G[Delete successor<br/>from right subtree]
+```
+
+---
+
+### Kotlin Usage Example
+```kotlin
+// Build a BST
+var root: TreeNode<Int>? = null
+root = insert(root, 50)
+root = insert(root, 30)
+root = insert(root, 70)
+root = insert(root, 20)
+root = insert(root, 40)
+root = insert(root, 60)
+root = insert(root, 80)
+
+// Search for a value
+val found = search(root, 40)
+println("Found 40: ${found != null}")  // true
+
+val notFound = search(root, 99)
+println("Found 99: ${notFound != null}")  // false
+
+// Remove a node
+root = remove(root, 30)
+
+// In-order traversal to verify BST property
+inOrder(root) { print("${it.value} ") }
+// Output: 20 40 50 60 70 80
+```
+
+---
+
+### Real-World Applications
+
+**Binary Search Trees (and their balanced variants like AVL and Red-Black Trees) are widely used:**
+
+1. **Language Standard Libraries**:
+   - **C++ STL**: `std::map`, `std::set`, `std::multimap`, `std::multiset` use Red-Black Trees
+   - **Java**: `TreeMap`, `TreeSet` use Red-Black Trees
+   - Ordered collections requiring O(log n) operations
+
+2. **Operating System Schedulers**:
+   - Linux Completely Fair Scheduler (CFS) uses Red-Black Trees to manage runnable processes
+   - Priority-based task scheduling in real-time systems
+
+3. **Network & Routing**:
+   - Software-defined networking (SDN) uses Red-Black Trees for flow tables
+   - IP address lookup tables using BST variants
+
+4. **Graphics & Game Development**:
+   - BSP (Binary Space Partitioning) trees for 3D rendering and collision detection
+   - Quadtrees/Octrees (spatial BST variants) for scene management
+   - Dynamic spatial indexing for object culling
+
+5. **Event-Driven Systems**:
+   - Event queues maintaining time-ordered events using BSTs
+   - Timer management in GUI frameworks
+
+6. **Autocomplete Systems**:
+   - Lexicographic ordering in search suggestions
+   - Combined with tries for efficient prefix matching
+
+7. **Version Control**:
+   - Git uses tree structures to represent directory hierarchies
+   - Efficient bisecting for bug detection
+
+8. **In-Memory Caching**:
+   - Redis sorted sets use skip lists (probabilistic alternative to balanced BST)
+   - LRU cache implementations with ordered access tracking
+
+**Why Balanced BSTs (AVL/Red-Black) over plain BST?**
+- Plain BST can degrade to O(n) with sorted insertions (becomes a linked list)
+- Balanced variants maintain O(log n) guarantees through automatic rebalancing
+- Red-Black Trees are preferred in practice (less strict balancing = fewer rotations)
 
 ---
 ## Adding New Algorithms

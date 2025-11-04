@@ -1,9 +1,9 @@
 package org.github.clnnn
 
 data class TreeNode<T>(
-    val value: T,
-    val left: TreeNode<T>? = null,
-    val right: TreeNode<T>? = null
+    var value: T,
+    var left: TreeNode<T>? = null,
+    var right: TreeNode<T>? = null
 )
 
 fun <T> preOrder(node: TreeNode<T>?, visit: (TreeNode<T>) -> Unit) {
