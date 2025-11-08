@@ -6,6 +6,7 @@ This repository contains Kotlin implementations of classic data structures and a
 - Binary Search (`BinarySearch.kt`)
 - Binary Tree Traversals: Pre-Order, In-Order, Post-Order (`TraversingBinaryTrees.kt`)
 - Binary Search Tree: Search, Insert, Remove (`BinarySearchTree.kt`)
+- Trie: Insert, Search, Autocomplete (`Trie.kt`)
 
 Below you'll find for each algorithm:
 - High-level description
@@ -526,6 +527,334 @@ inOrder(root) { print("${it.value} ") }
 - Plain BST can degrade to O(n) with sorted insertions (becomes a linked list)
 - Balanced variants maintain O(log n) guarantees through automatic rebalancing
 - Red-Black Trees are preferred in practice (less strict balancing = fewer rotations)
+
+---
+## Trie (Prefix Tree)
+
+A Trie (pronounced "try") is a tree-like data structure used to store a dynamic set of strings, where each node represents a single character. It excels at prefix-based operations like autocomplete, spell checking, and dictionary lookups.
+
+**Key Properties:**
+- Each node contains a map of children (character → TrieNode)
+- A boolean flag marks whether the node represents the end of a valid word
+- Root node is typically empty
+- All descendants of a node share a common prefix
+
+### Operations Implemented
+1. **Insert**: Add a new word to the trie
+2. **Search (isPresent)**: Check if a word exists in the trie
+3. **Autocomplete**: Find all words with a given prefix
+4. **CollectWords**: Helper to recursively gather words from a subtree
+
+### Complexities
+**Time Complexity:**
+- Insert: O(m) where m = length of word
+- Search: O(m) where m = length of word
+- Autocomplete: O(p + n) where p = prefix length, n = number of nodes in subtree
+- Space: O(ALPHABET_SIZE × N × M) where N = number of words, M = average length
+
+**Space Complexity:**
+- O(ALPHABET_SIZE × N × M) in worst case (no shared prefixes)
+- Much better in practice due to prefix sharing
+
+---
+
+### Insert Operation
+
+#### Idea
+1. Start at root node
+2. For each character in the word:
+   - If child node exists for character → move to it
+   - If child node doesn't exist → create new node
+3. Mark the final node as end of word
+
+#### Example: Insert "cat", "car", "dog"
+```
+Insert "cat":
+root
+ └─ c
+     └─ a
+         └─ t (*)
+
+Insert "car" (shares prefix "ca"):
+root
+ └─ c
+     └─ a
+         ├─ t (*)
+         └─ r (*)
+
+Insert "dog":
+root
+ ├─ c
+ │   └─ a
+ │       ├─ t (*)
+ │       └─ r (*)
+ └─ d
+     └─ o
+         └─ g (*)
+
+(*) indicates end of word
+```
+
+#### ASCII Visualization (Detailed)
+```
+Building Trie step-by-step with: ["cat", "cats", "car", "card", "care", "dog"]
+
+After "cat":
+        (root)
+          |
+          c
+          |
+          a
+          |
+         [t]
+
+After "cats":
+        (root)
+          |
+          c
+          |
+          a
+          |
+         [t]
+          |
+          s
+         
+After "car":
+        (root)
+          |
+          c
+          |
+          a
+         / \
+       [t] [r]
+        |
+        s
+
+After all insertions:
+                (root)
+                /    \
+               c      d
+               |      |
+               a      o
+              / \     |
+            [t] [r]  [g]
+             |  / \
+             s [d] [e]
+```
+[word] = isEndOfWord = true
+
+---
+
+### Search Operation
+
+#### Idea
+1. Start at root node
+2. For each character in word:
+   - If child node exists → move to it
+   - If child node doesn't exist → word not found
+3. After traversing all characters, check if current node is marked as end of word
+
+#### Example: Search in Trie containing ["cat", "car", "dog"]
+```
+Search for "car":
+Step 1: root → 'c' exists → move to c
+Step 2: c → 'a' exists → move to a
+Step 3: a → 'r' exists → move to r
+Step 4: r.isEndOfWord = true → FOUND
+
+Search for "ca":
+Step 1: root → 'c' exists → move to c
+Step 2: c → 'a' exists → move to a
+Step 3: a.isEndOfWord = false → NOT FOUND (it's a prefix, not a word)
+
+Search for "cab":
+Step 1: root → 'c' exists → move to c
+Step 2: c → 'a' exists → move to a
+Step 3: a → 'b' doesn't exist → NOT FOUND
+```
+
+---
+
+### Autocomplete Operation
+
+#### Idea
+1. Navigate to the node representing the prefix
+2. If prefix doesn't exist → return empty list
+3. Recursively collect all words in the subtree starting from prefix node
+4. For each node marked as end of word, add the current path to results
+
+#### Example: Autocomplete "ca" in Trie with ["cat", "cats", "car", "card", "care", "dog"]
+```
+Step 1: Navigate to prefix "ca"
+        root → c → a
+
+Step 2: Subtree from 'a':
+         a
+        / \
+       t   r
+       |  /|\
+       s [d][e]
+      
+Step 3: DFS Collection:
+   - Path: "ca" + "t" → "cat" (isEndOfWord) → add to results
+   - Path: "ca" + "t" + "s" → "cats" (isEndOfWord) → add to results
+   - Path: "ca" + "r" → "car" (isEndOfWord) → add to results
+   - Path: "ca" + "r" + "d" → "card" (isEndOfWord) → add to results
+   - Path: "ca" + "r" + "e" → "care" (isEndOfWord) → add to results
+
+Result: ["cat", "cats", "car", "card", "care"]
+```
+
+#### Mermaid Diagram (Autocomplete Flow)
+```mermaid
+graph TD
+  A[Start: Autocomplete 'ca']
+  A --> B[Navigate to prefix node]
+  B --> C{Prefix exists?}
+  C -->|No| D[Return empty array]
+  C -->|Yes| E[Collect all words<br/>in subtree]
+  E --> F[DFS traversal]
+  F --> G{Node is end of word?}
+  G -->|Yes| H[Add word to results]
+  G -->|No| I[Continue to children]
+  H --> I
+  I --> J{More children?}
+  J -->|Yes| F
+  J -->|No| K[Return results]
+```
+
+---
+
+### Complete Trie Structure Visualization
+
+#### Mermaid Diagram (Trie with multiple words)
+```mermaid
+graph TD
+  ROOT((root))
+  ROOT --> C[c]
+  ROOT --> D[d]
+  
+  C --> A1[a]
+  A1 --> T[t*]
+  T --> S[s*]
+  A1 --> R[r*]
+  R --> RD[d*]
+  R --> RE[e*]
+  
+  D --> O[o]
+  O --> G[g*]
+  
+  style T fill:#90EE90
+  style S fill:#90EE90
+  style R fill:#90EE90
+  style RD fill:#90EE90
+  style RE fill:#90EE90
+  style G fill:#90EE90
+```
+*Green nodes (with \*) indicate end of word*
+
+**Words stored: cat, cats, car, card, care, dog**
+
+---
+
+### Kotlin Usage Example
+```kotlin
+// Create root node
+val root = TrieNode()
+
+// Insert words
+insert(root, "cat")
+insert(root, "cats")
+insert(root, "car")
+insert(root, "card")
+insert(root, "care")
+insert(root, "dog")
+insert(root, "dodge")
+insert(root, "door")
+
+// Search for words
+println(isPresent(root, "car"))     // true
+println(isPresent(root, "ca"))      // false (prefix, not a word)
+println(isPresent(root, "cart"))    // false
+
+// Autocomplete
+val suggestions = autoComplete(root, "ca")
+println(suggestions.joinToString())  
+// Output: cat, cats, car, card, care
+
+val dogWords = autoComplete(root, "do")
+println(dogWords.joinToString())     
+// Output: dog, dodge, door
+
+val noMatch = autoComplete(root, "xyz")
+println(noMatch.joinToString())      
+// Output: (empty)
+```
+
+---
+
+### Real-World Applications
+
+**Tries are fundamental to many modern systems:**
+
+1. **Autocomplete & Search Suggestions**:
+   - Google Search autocomplete uses trie-like structures
+   - IDE code completion (variable names, function names)
+   - Command-line shell completion (bash, zsh)
+   - Mobile keyboard text prediction
+
+2. **Spell Checkers & Dictionaries**:
+   - Microsoft Word, Google Docs spell checking
+   - Browser spell checkers
+   - Fast dictionary lookups with O(m) time
+
+3. **IP Routing (Longest Prefix Matching)**:
+   - Network routers use tries for IP address lookup tables
+   - Efficiently match IP addresses to routing rules
+   - Critical for internet infrastructure performance
+
+4. **DNS Resolution**:
+   - Domain name lookup systems
+   - Hierarchical structure matches trie organization (com → google → www)
+
+5. **Genome Sequencing & Bioinformatics**:
+   - DNA sequence matching and analysis
+   - Finding gene patterns and motifs
+   - Efficient storage of genetic codes
+
+6. **Contact Lists & Phone Directories**:
+   - Smartphone contact search
+   - T9 predictive text on old phones
+   - Enterprise directory systems
+
+7. **Web Crawlers & URL Filtering**:
+   - Bloom filters combined with tries for URL deduplication
+   - Ad blockers use tries to match URL patterns
+
+8. **Game Development**:
+   - Command parsing in text-based games
+   - Player name validation and suggestions
+   - Chat filter systems (profanity detection)
+
+9. **File System Path Lookup**:
+   - Some file systems use trie-like structures for efficient path resolution
+   - Version control systems for tracking file hierarchies
+
+10. **Natural Language Processing**:
+    - Tokenization and word segmentation
+    - N-gram language models
+    - Morphological analysis
+
+**Advantages over Hash Tables:**
+- No hash collisions
+- Lexicographic ordering preserved (can list words alphabetically)
+- Prefix operations (find all words starting with "abc")
+- Range queries possible
+
+**Advantages over BSTs:**
+- Better worst-case time complexity: O(m) vs O(m log n)
+- Natural support for string operations
+- Memory efficient when many strings share prefixes
 
 ---
 ## Adding New Algorithms
