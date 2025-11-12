@@ -7,6 +7,7 @@ This repository contains Kotlin implementations of classic data structures and a
 - Binary Tree Traversals: Pre-Order, In-Order, Post-Order (`TraversingBinaryTrees.kt`)
 - Binary Search Tree: Search, Insert, Remove (`BinarySearchTree.kt`)
 - Trie: Insert, Search, Autocomplete (`Trie.kt`)
+- Disjoint Set (Union-Find): Find, Union, IsConnected (`DisjointSet.kt`)
 
 Below you'll find for each algorithm:
 - High-level description
@@ -855,6 +856,400 @@ println(noMatch.joinToString())
 - Better worst-case time complexity: O(m) vs O(m log n)
 - Natural support for string operations
 - Memory efficient when many strings share prefixes
+
+---
+## Disjoint Set (Union-Find)
+
+A Disjoint Set (also called Union-Find) is a data structure that tracks a partition of a set into disjoint (non-overlapping) subsets. It provides near-constant-time operations to:
+- Add new sets
+- Merge sets (union)
+- Find the representative (root) of a set
+- Check if two elements are in the same set
+
+**Key Properties:**
+- Each element points to a parent element
+- Elements in the same set form a tree structure
+- The root of each tree is the set representative
+- Two optimizations make it extremely efficient:
+  - **Path Compression**: During find, make nodes point directly to root
+  - **Union by Rank**: Attach smaller tree under root of larger tree
+
+### Operations Implemented
+1. **Find**: Locate the root (representative) of a set containing a given element
+2. **Union**: Merge two sets into one
+3. **IsConnected**: Check if two elements belong to the same set
+
+### Complexities
+**Time Complexity (with both optimizations):**
+- Find: O(α(n)) amortized, where α is the inverse Ackermann function
+- Union: O(α(n)) amortized
+- IsConnected: O(α(n)) amortized
+- **Note**: α(n) grows so slowly that it's effectively constant for all practical inputs (α(n) ≤ 4 for n < 2^65536)
+
+**Space Complexity:**
+- O(n) where n = number of elements
+- Each node stores: value, parent reference, rank
+
+**Without optimizations:**
+- Operations can degrade to O(n) in worst case (tree becomes a chain)
+
+---
+
+### Find Operation (with Path Compression)
+
+#### Idea
+1. If node is its own parent → it's the root, return it
+2. Otherwise, recursively find root of parent
+3. **Path Compression**: Set node's parent directly to root (flattens tree)
+4. Return the root
+
+#### Example: Find operation with path compression
+```
+Initial state (before any finds):
+    A
+    |
+    B
+    |
+    C
+    |
+    D
+
+Find(D):
+Step 1: D.parent = C (not root), recursively find(C)
+Step 2: C.parent = B (not root), recursively find(B)
+Step 3: B.parent = A (not root), recursively find(A)
+Step 4: A.parent = A (is root!), return A
+Step 5: Set C.parent = A (path compression)
+Step 6: Set D.parent = A (path compression)
+
+After find(D):
+      A
+    / | \
+   B  C  D
+
+All nodes now point directly to root!
+Next find operations will be O(1).
+```
+
+#### ASCII Visualization (Path Compression Effect)
+```
+Before multiple operations:
+    1
+    |
+    2
+    |
+    3
+    |
+    4
+    |
+    5
+
+After find(5):
+      1
+    / | \ \
+   2  3  4 5
+
+After find(3):
+      1
+    /|\ \
+   2 3 4 5
+   (no change, already compressed)
+```
+
+---
+
+### Union Operation (with Union by Rank)
+
+#### Idea
+1. Find roots of both elements
+2. If roots are same → already in same set, do nothing
+3. **Union by Rank**: Attach tree with smaller rank under root of tree with larger rank
+4. If ranks are equal → attach either way, increment rank of new root
+
+**Rank**: Upper bound on tree height (not exact height due to path compression)
+
+#### Example: Union operations building a forest
+```
+Initial: 5 separate elements
+[A] [B] [C] [D] [E]
+rank: 0  0   0   0   0
+
+Union(A, B):
+Compare ranks: A.rank(0) == B.rank(0)
+Attach B under A, increment A.rank
+    A
+    |
+    B
+rank: 1  0
+
+Union(C, D):
+    A      C
+    |      |
+    B      D
+rank: 1     1
+
+Union(A, C):
+Compare ranks: A.rank(1) == C.rank(1)
+Attach C under A, increment A.rank
+      A
+     / \
+    B   C
+        |
+        D
+rank: 2
+
+Union(A, E):
+Compare ranks: A.rank(2) > E.rank(0)
+Attach E under A (no rank change)
+        A
+      / | \
+     B  C  E
+        |
+        D
+rank: 2
+```
+
+#### Example: Union by Rank preventing long chains
+```
+Without Union by Rank (BAD):
+Union(A,B), Union(B,C), Union(C,D), Union(D,E)
+    A
+    |
+    B
+    |
+    C
+    |
+    D
+    |
+    E
+Height = 4, find(E) = O(5) before compression
+
+With Union by Rank (GOOD):
+        A
+       /|\
+      B C D
+          |
+          E
+Height = 2, find(E) = O(3) before compression
+```
+
+---
+
+### Complete Example: Building Connected Components
+
+#### Scenario: Network connectivity
+```
+Nodes: 1, 2, 3, 4, 5, 6
+Connections: (1,2), (3,4), (2,3), (5,6)
+
+Initial state:
+[1] [2] [3] [4] [5] [6]
+
+Union(1, 2):
+ 1   [3] [4] [5] [6]
+ |
+ 2
+
+Union(3, 4):
+ 1    3  [5] [6]
+ |    |
+ 2    4
+
+Union(2, 3):
+   1
+  / \
+ 2   3
+     |
+     4
+
+Union(5, 6):
+   1        5
+  / \       |
+ 2   3      6
+     |
+     4
+
+Final forest (2 components):
+Component 1: {1, 2, 3, 4}
+Component 2: {5, 6}
+
+Query: isConnected(1, 4)? 
+find(1) = 1, find(4) = 1 → YES
+
+Query: isConnected(1, 5)?
+find(1) = 1, find(5) = 5 → NO
+```
+
+#### Mermaid Diagram (Union Operations)
+```mermaid
+graph TD
+  A[Initial: Separate sets]
+  A --> B[Union 1,2]
+  B --> C[Union 3,4]
+  C --> D[Union 2,3]
+  D --> E[Union 5,6]
+  
+  subgraph "After Union(2,3)"
+    F[1] --> G[2]
+    F --> H[3]
+    H --> I[4]
+  end
+  
+  subgraph "Final State"
+    J[5] --> K[6]
+  end
+```
+
+---
+
+### Kotlin Usage Example
+```kotlin
+// Create nodes
+val node1 = DisjointSetNode(1)
+val node2 = DisjointSetNode(2)
+val node3 = DisjointSetNode(3)
+val node4 = DisjointSetNode(4)
+val node5 = DisjointSetNode(5)
+val node6 = DisjointSetNode(6)
+
+// Build connections
+union(node1, node2)  // Connect 1-2
+union(node3, node4)  // Connect 3-4
+union(node2, node3)  // Connect component{1,2} with component{3,4}
+union(node5, node6)  // Connect 5-6
+
+// Check connectivity
+println(isConnected(node1, node4))  // true (same component)
+println(isConnected(node1, node5))  // false (different components)
+println(isConnected(node3, node2))  // true (same component)
+
+// Find representatives
+val root1 = find(node1)
+val root4 = find(node4)
+println(root1 === root4)  // true (same root = same component)
+
+val root5 = find(node5)
+println(root1 === root5)  // false (different components)
+```
+
+**Output:**
+```
+true
+false
+true
+true
+false
+```
+
+---
+
+### Real-World Applications
+
+**Disjoint Set is fundamental to many algorithms and systems:**
+
+1. **Network Connectivity**:
+   - Detect if two computers are connected in a network
+   - Find connected components in social networks
+   - Facebook "People You May Know" (friend-of-friend analysis)
+   - LinkedIn connection degree calculation
+
+2. **Kruskal's Minimum Spanning Tree Algorithm**:
+   - Build minimum cost network connecting all cities
+   - Efficiently detect cycles while adding edges
+   - Used in: network design, circuit design, clustering
+   ```
+   Algorithm:
+   1. Sort edges by weight
+   2. For each edge (u,v):
+      - If find(u) != find(v): add edge, union(u,v)
+      - Else: skip (would create cycle)
+   ```
+
+3. **Image Processing**:
+   - Connected component labeling (find regions in images)
+   - Flood fill algorithms (Photoshop magic wand tool)
+   - Image segmentation and object detection
+   - Converting bitmap images to vector graphics
+
+4. **Game Development**:
+   - Procedural maze generation (randomized Kruskal's algorithm)
+   - Terrain generation (group connected tiles)
+   - Fog of war (track explored regions)
+   - Team/faction systems (which units belong to which player)
+
+5. **Compiler Optimization**:
+   - Register allocation (track which variables interfere)
+   - Dead code elimination (find connected code blocks)
+   - Variable equivalence classes
+
+6. **Least Common Ancestor (LCA)**:
+   - Offline LCA queries using Tarjan's algorithm
+   - Used in: Git merge base finding, phylogenetic trees
+
+7. **Dynamic Connectivity Problems**:
+   - Online algorithms for graph connectivity
+   - Incremental connectivity maintenance
+   - Used in: distributed systems, network monitoring
+
+8. **Percolation Theory**:
+   - Physics simulations (fluid flow through porous materials)
+   - Material science (electrical conductivity)
+   - Epidemiology (disease spread modeling)
+
+9. **VLSI Circuit Design**:
+   - Equivalence checking of circuit components
+   - Grouping electrically connected components
+
+10. **Clustering Algorithms**:
+    - Single-linkage clustering in machine learning
+    - Grouping similar data points efficiently
+
+**Why Union-Find over DFS/BFS for connectivity?**
+- **Incremental**: Add edges one at a time efficiently
+- **Online queries**: Check connectivity without full graph traversal
+- **Better complexity**: O(α(n)) vs O(V+E) per query
+- **Memory efficient**: No need to store full graph structure
+
+**Real Example - Kruskal's MST:**
+```
+Graph edges (weight):
+(1-2, 1), (2-3, 2), (1-3, 3), (3-4, 1), (2-4, 4)
+
+Sorted: (1-2,1), (3-4,1), (2-3,2), (1-3,3), (2-4,4)
+
+Process edges:
+1. (1-2,1): find(1)≠find(2) → union(1,2), add edge [cost: 1]
+2. (3-4,1): find(3)≠find(4) → union(3,4), add edge [cost: 2]
+3. (2-3,2): find(2)≠find(3) → union(2,3), add edge [cost: 4]
+4. (1-3,3): find(1)==find(3) → skip (would create cycle)
+5. (2-4,4): find(2)==find(4) → skip (already connected)
+
+MST edges: (1-2), (3-4), (2-3)
+Total cost: 4
+```
+
+---
+
+### Performance Characteristics
+
+**Inverse Ackermann Function α(n):**
+```
+α(1) = 1
+α(4) = 2
+α(16) = 3
+α(65536) = 4
+α(2^65536) = 5 (more atoms than in the universe)
+```
+For all practical purposes, α(n) ≤ 4, making operations essentially O(1).
+
+**Comparison with alternatives:**
+
+| Operation | Naive Array | DFS/BFS | Union-Find |
+|-----------|-------------|---------|------------|
+| Union | O(n) | O(V+E) | O(α(n)) ≈ O(1) |
+| Find | O(1) | O(V+E) | O(α(n)) ≈ O(1) |
+| Space | O(n) | O(V+E) | O(n) |
+| Use Case | Static | Full traversal | Dynamic, incremental |
 
 ---
 ## Adding New Algorithms
