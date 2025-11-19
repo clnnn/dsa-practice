@@ -138,6 +138,566 @@ Narrow left half
  lo=3 hi=3 mid=3 (32) -> success
 ```
 
+---
+## Graph Search: Depth-First Search (DFS)
+
+Depth-First Search is a graph traversal algorithm that explores as far as possible along each branch before backtracking. It uses a stack data structure (either explicitly or via recursion) to keep track of nodes to visit.
+
+**Key Properties:**
+- Explores deeply before exploring sibling nodes
+- Uses a stack (LIFO - Last In First Out)
+- Can be implemented iteratively or recursively
+- Visits each node exactly once
+- Requires tracking visited nodes to avoid cycles
+
+### Complexities
+**Time Complexity:**
+- O(V + E) where V = number of vertices (nodes), E = number of edges
+- Each node is visited once, each edge is examined once
+
+**Space Complexity:**
+- O(V) for the visited set
+- O(V) for the stack in worst case (linear graph)
+- Total: O(V)
+
+### Algorithm Steps
+1. Start at the root node
+2. Mark current node as visited
+3. Process/visit the current node
+4. Push all unvisited neighbors onto the stack
+5. Pop next node from stack and repeat
+6. Continue until stack is empty
+
+### Example: DFS on a Graph
+
+#### Graph Structure
+```
+        A
+       / \
+      B   C
+     / \   \
+    D   E   F
+         \
+          G
+```
+
+**Adjacency List:**
+- A → [B, C]
+- B → [D, E]
+- C → [F]
+- D → []
+- E → [G]
+- F → []
+- G → []
+
+#### DFS Traversal (starting from A)
+```
+Initial: stack = [A], visited = {}
+
+Step 1: Pop A
+  - Visit A
+  - Mark A as visited
+  - Push neighbors: C, B (reversed to maintain natural order)
+  - Stack: [C, B], Visited: {A}
+
+Step 2: Pop B
+  - Visit B
+  - Mark B as visited
+  - Push neighbors: E, D (reversed)
+  - Stack: [C, E, D], Visited: {A, B}
+
+Step 3: Pop D
+  - Visit D
+  - Mark D as visited
+  - No unvisited neighbors
+  - Stack: [C, E], Visited: {A, B, D}
+
+Step 4: Pop E
+  - Visit E
+  - Mark E as visited
+  - Push neighbor: G
+  - Stack: [C, G], Visited: {A, B, D, E}
+
+Step 5: Pop G
+  - Visit G
+  - Mark G as visited
+  - No unvisited neighbors
+  - Stack: [C], Visited: {A, B, D, E, G}
+
+Step 6: Pop C
+  - Visit C
+  - Mark C as visited
+  - Push neighbor: F
+  - Stack: [F], Visited: {A, B, D, E, G, C}
+
+Step 7: Pop F
+  - Visit F
+  - Mark F as visited
+  - No unvisited neighbors
+  - Stack: [], Visited: {A, B, D, E, G, C, F}
+
+Stack is empty → Done!
+
+DFS Order: A → B → D → E → G → C → F
+```
+
+### ASCII Visualization (DFS Path)
+```
+Step-by-step exploration:
+
+        A ← Start
+       /↓\
+      B   C
+     /↓\   \
+    D   E   F
+         \↓
+          G
+
+Path with depth indicators:
+A (depth 0)
+├─ B (depth 1)
+│  ├─ D (depth 2) ← backtrack
+│  └─ E (depth 2)
+│     └─ G (depth 3) ← backtrack to A
+└─ C (depth 1)
+   └─ F (depth 2) ← done
+
+Visit order: A → B → D → E → G → C → F
+```
+
+### Mermaid Diagram (DFS Traversal Order)
+```mermaid
+graph TD
+  A[A - Visit 1<br/>depth 0]
+  A -->|explore| B[B - Visit 2<br/>depth 1]
+  A -.->|later| C[C - Visit 6<br/>depth 1]
+  
+  B -->|explore| D[D - Visit 3<br/>depth 2]
+  B -->|explore| E[E - Visit 4<br/>depth 2]
+  
+  E -->|explore| G[G - Visit 5<br/>depth 3]
+  
+  C -->|explore| F[F - Visit 7<br/>depth 2]
+  
+  style A fill:#FFE6E6
+  style B fill:#FFE6E6
+  style D fill:#FFE6E6
+  style E fill:#FFE6E6
+  style G fill:#FFE6E6
+  style C fill:#E6F3FF
+  style F fill:#E6F3FF
+```
+
+### Kotlin Usage Example
+```kotlin
+// Build a graph
+val g = GraphNode("G", "g", emptyList())
+val e = GraphNode("E", "e", listOf(g))
+val d = GraphNode("D", "d", emptyList())
+val b = GraphNode("B", "b", listOf(d, e))
+val f = GraphNode("F", "f", emptyList())
+val c = GraphNode("C", "c", listOf(f))
+val a = GraphNode("A", "a", listOf(b, c))
+
+// Perform DFS
+print("DFS: ")
+dfs(a) { node -> print("${node.id} ") }
+println()
+
+// Output: DFS: A B D E G C F
+```
+
+### Real-World Applications
+
+**DFS is widely used in various domains:**
+
+1. **Pathfinding & Maze Solving**:
+   - Finding a path between two points (not necessarily shortest)
+   - Puzzle solving (Sudoku, N-Queens)
+   - Game AI pathfinding
+
+2. **Cycle Detection**:
+   - Detect cycles in directed/undirected graphs
+   - Deadlock detection in operating systems
+   - Dependency cycle detection in build systems
+
+3. **Topological Sorting**:
+   - Build order determination (dependencies)
+   - Task scheduling with prerequisites
+   - Course prerequisite ordering
+   - Makefile dependency resolution
+
+4. **Connected Components**:
+   - Find all nodes reachable from a starting node
+   - Network connectivity analysis
+   - Social network clustering
+
+5. **Tree Traversals**:
+   - Pre-order, in-order, post-order traversals are DFS variants
+   - File system traversal
+   - DOM tree traversal in web browsers
+
+6. **Strongly Connected Components (Tarjan's/Kosaraju's algorithms)**:
+   - Web page ranking (PageRank preprocessing)
+   - Social network analysis
+   - Code optimization (finding code regions)
+
+7. **Backtracking Algorithms**:
+   - All DFS-based: N-Queens, Sudoku solver, combination generation
+   - Chess move generation
+   - Constraint satisfaction problems
+
+8. **Graph Analysis**:
+   - Finding bridges and articulation points
+   - Biconnected components
+   - Network reliability analysis
+
+9. **Web Crawling**:
+   - Spider programs that follow links deeply
+   - Site mirroring tools
+   - Dead link detection
+
+10. **Version Control Systems**:
+    - Git uses DFS for branch traversal
+    - Finding common ancestors
+    - Merge base calculation
+
+**DFS vs BFS - When to Use DFS:**
+- When solution is far from root (deep in tree)
+- When you need to explore all paths
+- Memory is limited (DFS uses less memory than BFS on wide graphs)
+- For problems requiring backtracking
+- When you need topological ordering
+
+---
+## Graph Search: Breadth-First Search (BFS)
+
+Breadth-First Search is a graph traversal algorithm that explores all neighbors at the current depth before moving to nodes at the next depth level. It uses a queue data structure to keep track of nodes to visit.
+
+**Key Properties:**
+- Explores level by level (layer by layer)
+- Uses a queue (FIFO - First In First Out)
+- Guarantees shortest path in unweighted graphs
+- Visits each node exactly once
+- Requires tracking visited nodes to avoid cycles
+
+### Complexities
+**Time Complexity:**
+- O(V + E) where V = number of vertices (nodes), E = number of edges
+- Each node is visited once, each edge is examined once
+
+**Space Complexity:**
+- O(V) for the visited set
+- O(V) for the queue in worst case (all nodes at one level)
+- Total: O(V)
+- **Note**: BFS typically uses more memory than DFS on graphs with high branching factor
+
+### Algorithm Steps
+1. Start at the root node
+2. Add root to queue
+3. While queue is not empty:
+   - Dequeue front node
+   - If already visited, skip
+   - Mark as visited and process node
+   - Enqueue all unvisited neighbors
+4. Continue until queue is empty
+
+### Example: BFS on a Graph
+
+#### Graph Structure (Same as DFS example)
+```
+        A
+       / \
+      B   C
+     / \   \
+    D   E   F
+         \
+          G
+```
+
+**Adjacency List:**
+- A → [B, C]
+- B → [D, E]
+- C → [F]
+- D → []
+- E → [G]
+- F → []
+- G → []
+
+#### BFS Traversal (starting from A)
+```
+Initial: queue = [A], visited = {}
+
+Step 1: Dequeue A
+  - Visit A
+  - Mark A as visited
+  - Enqueue neighbors: B, C
+  - Queue: [B, C], Visited: {A}
+
+Step 2: Dequeue B
+  - Visit B
+  - Mark B as visited
+  - Enqueue neighbors: D, E
+  - Queue: [C, D, E], Visited: {A, B}
+
+Step 3: Dequeue C
+  - Visit C
+  - Mark C as visited
+  - Enqueue neighbor: F
+  - Queue: [D, E, F], Visited: {A, B, C}
+
+Step 4: Dequeue D
+  - Visit D
+  - Mark D as visited
+  - No unvisited neighbors
+  - Queue: [E, F], Visited: {A, B, C, D}
+
+Step 5: Dequeue E
+  - Visit E
+  - Mark E as visited
+  - Enqueue neighbor: G
+  - Queue: [F, G], Visited: {A, B, C, D, E}
+
+Step 6: Dequeue F
+  - Visit F
+  - Mark F as visited
+  - No unvisited neighbors
+  - Queue: [G], Visited: {A, B, C, D, E, F}
+
+Step 7: Dequeue G
+  - Visit G
+  - Mark G as visited
+  - No unvisited neighbors
+  - Queue: [], Visited: {A, B, C, D, E, F, G}
+
+Queue is empty → Done!
+
+BFS Order: A → B → C → D → E → F → G
+```
+
+### ASCII Visualization (BFS Levels)
+```
+Level-by-level exploration:
+
+Level 0:    A ← Start
+
+Level 1:    B   C
+
+Level 2:    D   E   F
+
+Level 3:        G
+
+Visit order by level:
+Level 0: A
+Level 1: B, C
+Level 2: D, E, F
+Level 3: G
+
+Complete order: A → B → C → D → E → F → G
+```
+
+### Detailed Level Visualization
+```
+        A          Level 0: [A]
+       / \         
+      B   C        Level 1: [B, C]
+     / \   \       
+    D   E   F      Level 2: [D, E, F]
+         \         
+          G        Level 3: [G]
+
+Queue states during traversal:
+Start:  [A]
+After A: [B, C]
+After B: [C, D, E]
+After C: [D, E, F]
+After D: [E, F]
+After E: [F, G]
+After F: [G]
+After G: []
+```
+
+### Mermaid Diagram (BFS Traversal Order by Level)
+```mermaid
+graph TD
+  A[A - Visit 1<br/>Level 0]
+  A -->|level 1| B[B - Visit 2<br/>Level 1]
+  A -->|level 1| C[C - Visit 3<br/>Level 1]
+  
+  B -->|level 2| D[D - Visit 4<br/>Level 2]
+  B -->|level 2| E[E - Visit 5<br/>Level 2]
+  
+  C -->|level 2| F[F - Visit 6<br/>Level 2]
+  
+  E -->|level 3| G[G - Visit 7<br/>Level 3]
+  
+  style A fill:#FFE6E6
+  style B fill:#FFD4D4
+  style C fill:#FFD4D4
+  style D fill:#FFC2C2
+  style E fill:#FFC2C2
+  style F fill:#FFC2C2
+  style G fill:#FFB0B0
+```
+
+### Shortest Path Example
+
+#### Finding Shortest Path from A to G
+```
+Graph:
+        A
+       / \
+      B   C
+     / \   \
+    D   E   F
+         \
+          G
+
+BFS naturally finds shortest path:
+A → B → E → G (3 edges)
+
+Why? BFS explores level by level:
+- Level 0: A (distance 0)
+- Level 1: B, C (distance 1)
+- Level 2: D, E, F (distance 2)
+- Level 3: G (distance 3)
+
+First time we reach G, we've found shortest path!
+
+Compare to DFS which might find:
+A → C → F → backtrack → B → E → G (not shortest discovery order)
+```
+
+### Kotlin Usage Example
+```kotlin
+// Build the same graph
+val g = GraphNode("G", "g", emptyList())
+val e = GraphNode("E", "e", listOf(g))
+val d = GraphNode("D", "d", emptyList())
+val b = GraphNode("B", "b", listOf(d, e))
+val f = GraphNode("F", "f", emptyList())
+val c = GraphNode("C", "c", listOf(f))
+val a = GraphNode("A", "a", listOf(b, c))
+
+// Perform BFS
+print("BFS: ")
+bfs(a) { node -> print("${node.id} ") }
+println()
+
+// Output: BFS: A B C D E F G
+
+// Compare with DFS
+print("DFS: ")
+dfs(a) { node -> print("${node.id} ") }
+println()
+
+// Output: DFS: A B D E G C F
+// Notice the different order!
+```
+
+### Real-World Applications
+
+**BFS is essential for many algorithms and systems:**
+
+1. **Shortest Path Finding (Unweighted Graphs)**:
+   - GPS navigation (road segments as equal weight)
+   - Social network "degrees of separation"
+   - Six degrees of Kevin Bacon
+   - Minimum number of moves in games (Chess, Rubik's cube)
+
+2. **Level-Order Tree Traversal**:
+   - File system directory listing by depth
+   - Organization hierarchy traversal
+   - HTML/XML DOM traversal by depth
+
+3. **Network Broadcasting**:
+   - Flooding algorithms in networks
+   - Peer-to-peer file sharing
+   - Network packet routing
+   - Gossip protocols in distributed systems
+
+4. **Web Crawling**:
+   - Crawl websites level by level
+   - Stay close to seed URLs
+   - Prioritize important pages (higher level = closer to root)
+
+5. **Social Networks**:
+   - Find all friends within N degrees
+   - Friend suggestions ("People you may know")
+   - Influence propagation modeling
+   - Community detection
+
+6. **Garbage Collection**:
+   - Cheney's algorithm uses BFS for copying garbage collection
+   - Mark-and-sweep phase in some GC implementations
+
+7. **GPS & Mapping**:
+   - Find nearby locations (within radius)
+   - Points of interest within distance
+   - Delivery route optimization (combined with other algorithms)
+
+8. **Bipartite Graph Testing**:
+   - Two-coloring problem
+   - Job assignment problems
+   - Matching algorithms
+   - Course scheduling
+
+9. **Ford-Fulkerson Algorithm**:
+   - Maximum flow in networks
+   - Uses BFS to find augmenting paths (Edmonds-Karp)
+   - Network capacity problems
+
+10. **Game AI**:
+    - Finding optimal move sequences
+    - Puzzle solving (8-puzzle, sliding puzzles)
+    - State space exploration
+    - Min-max algorithm preprocessing
+
+11. **Image Processing**:
+    - Flood fill algorithms
+    - Connected component labeling
+    - Region growing
+    - Morphological operations
+
+12. **Dependency Resolution**:
+    - Package managers finding dependency layers
+    - Build systems (level-by-level compilation)
+    - Parallel task scheduling
+
+**BFS vs DFS - When to Use BFS:**
+- Finding shortest path in unweighted graphs ✓
+- When solution is likely close to root
+- When you need to explore by levels/layers
+- Social network analysis (degrees of separation)
+- When you need to find all nodes within K distance
+- For bipartite graph testing
+- When you need guaranteed shortest path discovery order
+
+**Memory Consideration:**
+```
+Wide graph (branching factor = 3, depth = 4):
+
+DFS memory: O(depth) = O(4) = 4 nodes in stack
+BFS memory: O(nodes in widest level) = O(3^3) = 27 nodes in queue
+
+For wide graphs → DFS uses less memory
+For deep graphs → BFS uses less memory
+```
+
+### Performance Comparison Table
+
+| Aspect | DFS | BFS |
+|--------|-----|-----|
+| Data Structure | Stack | Queue |
+| Memory (wide graph) | Better (O(depth)) | Worse (O(width)) |
+| Shortest path | ❌ No guarantee | ✅ Guaranteed (unweighted) |
+| Implementation | Simpler (recursion) | Iterative (queue) |
+| Completeness | May infinite loop | Complete (finds if exists) |
+| Optimal | Not optimal | Optimal (unweighted) |
+| Use Case | Backtracking, cycles | Shortest path, levels |
+
+---
+## Binary Tree Traversals (Pre-Order, In-Order, Post-Order)
 
 ### Traversal Orders
 Given a node N, Left child L, Right child R:
