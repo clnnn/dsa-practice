@@ -8,6 +8,7 @@ This repository contains Kotlin implementations of classic data structures and a
 - Binary Search Tree: Search, Insert, Remove (`BinarySearchTree.kt`)
 - Trie: Insert, Search, Autocomplete (`Trie.kt`)
 - Disjoint Set (Union-Find): Find, Union, IsConnected (`DisjointSet.kt`)
+- Graph Search: Depth-First Search (DFS) and Breadth-First Search (BFS) (`GraphSearch.kt`)
 
 Below you'll find for each algorithm:
 - High-level description
