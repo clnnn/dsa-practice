@@ -9,6 +9,7 @@ This repository contains Kotlin implementations of classic data structures and a
 - Trie: Insert, Search, Autocomplete (`Trie.kt`)
 - Disjoint Set (Union-Find): Find, Union, IsConnected (`DisjointSet.kt`)
 - Graph Search: Depth-First Search (DFS) and Breadth-First Search (BFS) (`GraphSearch.kt`)
+- Minimum Spanning Tree: Kruskal's Algorithm (`MinSpanningTree.kt`)
 
 Below you'll find for each algorithm:
 - High-level description
@@ -1814,6 +1815,427 @@ For all practical purposes, α(n) ≤ 4, making operations essentially O(1).
 
 ---
 ## Adding New Algorithms
+---
+## Minimum Spanning Tree (Kruskal's Algorithm)
+
+A **Minimum Spanning Tree (MST)** is a subset of edges in a weighted, connected, undirected graph that connects all vertices together with the minimum possible total edge weight, without forming any cycles.
+
+**Key Properties:**
+- Contains exactly V-1 edges (where V = number of vertices)
+- No cycles (it's a tree)
+- Connects all vertices
+- Has minimum total weight among all spanning trees
+
+This implementation uses **Kruskal's Algorithm** with a **Disjoint Set (Union-Find)** data structure for efficient cycle detection.
+
+### Complexities
+**Time Complexity:**
+- O(E log E) where E = number of edges
+  - Sorting edges: O(E log E)
+  - Union-Find operations: O(E × α(V)) ≈ O(E) where α is inverse Ackermann function (nearly constant)
+  - Overall dominated by sorting: O(E log E)
+
+**Space Complexity:**
+- O(V + E) where V = vertices, E = edges
+  - O(V) for the disjoint set data structure
+  - O(E) for storing edges
+
+### Algorithm Steps (Kruskal's)
+1. Sort all edges by weight (ascending)
+2. Initialize disjoint set with all vertices
+3. For each edge (u, v) in sorted order:
+   - If u and v are in different sets (no cycle):
+     - Add edge to MST
+     - Union the sets containing u and v
+   - If u and v are in same set:
+     - Skip (would create cycle)
+4. Stop when MST has V-1 edges
+
+### Why Use Union-Find?
+Union-Find efficiently checks if adding an edge creates a cycle:
+- **Find**: Check if two vertices are in the same connected component
+- **Union**: Merge two components when edge is added
+- **Time**: Nearly O(1) per operation with path compression and union by rank
+
+### Example: Building MST for a Network
+
+#### Initial Graph
+```
+Vertices: A, B, C, D, E
+Edges with weights:
+
+    A ----1---- B
+    |         / |
+    |       /   |
+    3     2     4
+    |   /       |
+    | /         |
+    C ----5---- D
+    |           |
+    6           7
+    |           |
+    E ----------+
+
+All edges:
+(A-B, 1), (B-C, 2), (A-C, 3), (B-D, 4), (C-D, 5), (C-E, 6), (D-E, 7)
+```
+
+#### Step-by-Step Kruskal's Algorithm
+```
+Initial State:
+- Sorted edges: [(A-B,1), (B-C,2), (A-C,3), (B-D,4), (C-D,5), (C-E,6), (D-E,7)]
+- Disjoint Sets: {A}, {B}, {C}, {D}, {E}
+- MST edges: []
+- Total weight: 0
+
+Step 1: Process edge (A-B, weight=1)
+  - Find(A) = A, Find(B) = B → Different sets
+  - Union(A, B) → Sets: {A,B}, {C}, {D}, {E}
+  - ✅ Add to MST
+  - MST: [(A-B,1)]
+  - Weight: 1
+
+Step 2: Process edge (B-C, weight=2)
+  - Find(B) = A, Find(C) = C → Different sets
+  - Union(B, C) → Sets: {A,B,C}, {D}, {E}
+  - ✅ Add to MST
+  - MST: [(A-B,1), (B-C,2)]
+  - Weight: 3
+
+Step 3: Process edge (A-C, weight=3)
+  - Find(A) = A, Find(C) = A → Same set!
+  - ❌ Skip (would create cycle: A-B-C-A)
+  - MST: [(A-B,1), (B-C,2)]
+  - Weight: 3
+
+Step 4: Process edge (B-D, weight=4)
+  - Find(B) = A, Find(D) = D → Different sets
+  - Union(B, D) → Sets: {A,B,C,D}, {E}
+  - ✅ Add to MST
+  - MST: [(A-B,1), (B-C,2), (B-D,4)]
+  - Weight: 7
+
+Step 5: Process edge (C-D, weight=5)
+  - Find(C) = A, Find(D) = A → Same set!
+  - ❌ Skip (would create cycle)
+  - MST: [(A-B,1), (B-C,2), (B-D,4)]
+  - Weight: 7
+
+Step 6: Process edge (C-E, weight=6)
+  - Find(C) = A, Find(E) = E → Different sets
+  - Union(C, E) → Sets: {A,B,C,D,E}
+  - ✅ Add to MST
+  - MST: [(A-B,1), (B-C,2), (B-D,4), (C-E,6)]
+  - Weight: 13
+
+MST Complete! (4 edges = 5 vertices - 1) ✓
+Total weight: 13
+```
+
+### ASCII Visualization
+
+#### Original Graph (All Edges)
+```
+    A ----1---- B
+    |         / |
+    |       /   |
+    3     2     4
+    |   /       |
+    | /         |
+    C ----5---- D
+    |           |
+    6           7
+    |           |
+    E ----------+
+
+Edge weights:
+A-B:1, B-C:2, A-C:3, B-D:4, C-D:5, C-E:6, D-E:7
+```
+
+#### Minimum Spanning Tree (Selected Edges)
+```
+    A ----1---- B
+            .   |
+          .     |
+        2       4
+      .         |
+    .           |
+    C           D
+    |            
+    6            
+    |            
+    E            
+
+MST edges: A-B(1), B-C(2), B-D(4), C-E(6)
+Total weight: 1 + 2 + 4 + 6 = 13
+
+Edges excluded:
+- A-C (3): Creates cycle with A-B-C
+- C-D (5): Creates cycle with B-C-D
+- D-E (7): Creates cycle with B-D-C-E
+```
+
+#### Edge Selection Order (Greedy)
+```
+Order of consideration (sorted by weight):
+
+1. A-B (1) ✅ → First edge
+2. B-C (2) ✅ → Connects C
+3. A-C (3) ❌ → Would create cycle
+4. B-D (4) ✅ → Connects D
+5. C-D (5) ❌ → Would create cycle
+6. C-E (6) ✅ → Connects E (MST complete!)
+7. D-E (7) ❌ → Not needed (already connected)
+```
+
+### Mermaid Diagram (MST Construction Process)
+
+#### Original Graph with All Edges
+```mermaid
+graph LR
+  A((A))
+  B((B))
+  C((C))
+  D((D))
+  E((E))
+  
+  A ---|1| B
+  B ---|2| C
+  A ---|3| C
+  B ---|4| D
+  C ---|5| D
+  C ---|6| E
+  D ---|7| E
+  
+  style A fill:#e1f5ff
+  style B fill:#e1f5ff
+  style C fill:#e1f5ff
+  style D fill:#e1f5ff
+  style E fill:#e1f5ff
+```
+
+#### Final Minimum Spanning Tree
+```mermaid
+graph LR
+  A((A))
+  B((B))
+  C((C))
+  D((D))
+  E((E))
+  
+  A ===|1 ✓| B
+  B ===|2 ✓| C
+  B ===|4 ✓| D
+  C ===|6 ✓| E
+  
+  style A fill:#90EE90
+  style B fill:#90EE90
+  style C fill:#90EE90
+  style D fill:#90EE90
+  style E fill:#90EE90
+```
+
+### Kotlin Usage Example
+```kotlin
+// Create edges with weights
+val edges = listOf(
+    Edge("A", "B", 1),
+    Edge("B", "C", 2),
+    Edge("A", "C", 3),
+    Edge("B", "D", 4),
+    Edge("C", "D", 5),
+    Edge("C", "E", 6),
+    Edge("D", "E", 7)
+)
+
+// Create graph
+val graph = Graph(edges)
+
+// Find minimum spanning tree
+val (mstEdges, totalWeight) = minSpanningTree(graph)
+
+// Print results
+println("Minimum Spanning Tree:")
+mstEdges.forEach { (from, to, weight) ->
+    println("  $from - $to : $weight")
+}
+println("Total weight: $totalWeight")
+```
+
+**Expected Output:**
+```
+Minimum Spanning Tree:
+  A - B : 1
+  B - C : 2
+  B - D : 4
+  C - E : 6
+Total weight: 13
+```
+
+### Real-World Applications
+
+**MST algorithms are fundamental in many practical domains:**
+
+1. **Network Design (Primary Use Case)**:
+   - **Telecommunications**: Laying fiber optic cables to connect cities with minimum total cable length
+   - **Computer Networks**: Connecting nodes in a network with minimum total wire length
+   - **Power Grid**: Connecting power stations to substations with minimum transmission lines
+   - **Water/Gas Pipeline Networks**: Connecting distribution points with minimum pipe length
+   - **Road Networks**: Planning road construction to connect towns with minimum total cost
+
+2. **Cluster Analysis & Machine Learning**:
+   - Single-linkage clustering (hierarchical clustering)
+   - Image segmentation (grouping similar pixels)
+   - Finding natural groupings in data
+   - Community detection in social networks
+
+3. **Approximation Algorithms**:
+   - **Traveling Salesman Problem (TSP)**: MST provides 2-approximation
+   - **Steiner Tree Problem**: MST is starting point for approximation
+   - **Metric TSP**: Use MST as lower bound
+
+4. **Computer Vision**:
+   - Image segmentation (segment based on pixel similarity)
+   - Object recognition (feature matching)
+   - Medical imaging (tissue classification)
+
+5. **Distributed Systems**:
+   - **Broadcasting protocols**: Minimize message overhead
+   - **Multicast routing**: Efficiently send data to multiple recipients
+   - **Content delivery networks (CDN)**: Optimize data distribution paths
+
+6. **Biology & Bioinformatics**:
+   - **Phylogenetic trees**: Evolutionary relationships between species
+   - **Protein structure analysis**: Finding structural similarities
+   - **Gene expression analysis**: Clustering similar expression patterns
+
+7. **Circuit Design**:
+   - **VLSI Design**: Minimizing wire length in chip design
+   - **Printed Circuit Boards (PCB)**: Optimal routing of connections
+   - **Electrical grid design**: Minimize conductor usage
+
+8. **Transportation & Logistics**:
+   - **Airline route planning**: Connect airports with minimum total distance
+   - **Railway network design**: Connect stations efficiently
+   - **Delivery route optimization**: Foundation for vehicle routing
+
+9. **Social Network Analysis**:
+   - Finding strongly connected communities
+   - Influence propagation modeling
+   - Recommendation system foundations
+
+10. **Game Development**:
+    - Procedural terrain generation
+    - Dungeon/maze generation
+    - AI pathfinding graph simplification
+    - Level connectivity planning
+
+11. **Robotics**:
+    - **Motion planning**: Create simplified connectivity graph
+    - **Sensor network coverage**: Minimize communication links while maintaining connectivity
+    - **Multi-robot coordination**: Communication topology
+
+12. **Geographic Information Systems (GIS)**:
+    - Urban planning (optimize utility placement)
+    - Environmental monitoring network design
+    - Emergency service coverage optimization
+
+### MST Algorithms Comparison
+
+| Algorithm | Time Complexity | Data Structure | Best For |
+|-----------|----------------|----------------|----------|
+| **Kruskal's** | O(E log E) | Disjoint Set (Union-Find) | Sparse graphs (few edges) |
+| **Prim's** | O(E log V) with heap | Priority Queue | Dense graphs (many edges) |
+| **Borůvka's** | O(E log V) | Union-Find | Parallel/distributed computing |
+
+**Why This Implementation Uses Kruskal's:**
+- ✅ Simple to implement and understand
+- ✅ Works well with edge list representation
+- ✅ Natural fit with Union-Find data structure
+- ✅ Efficient for sparse graphs (common in practice)
+- ✅ Easy early stopping optimization (V-1 edges)
+
+### Key Insights
+
+**Greedy Algorithm:**
+- Kruskal's is a greedy algorithm: always picks minimum weight edge that doesn't create cycle
+- Greedy choice is always optimal for MST (proven by cut property)
+
+**Cycle Detection:**
+- Efficiently handled by Union-Find:
+  - If two vertices have same root → adding edge creates cycle
+  - If different roots → safe to add edge
+
+**Uniqueness:**
+- If all edge weights are distinct → MST is unique
+- If some weights are equal → multiple MSTs may exist with same total weight
+
+**Properties:**
+- MST weight is unique (even if MST structure isn't)
+- Removing any MST edge disconnects the graph
+- Adding any non-MST edge creates exactly one cycle
+
+### Example: Network Cost Minimization
+
+**Problem**: Connect 5 cities with fiber optic cables. What's the minimum total cable length?
+
+```
+Cities: A, B, C, D, E
+Distances (km):
+A-B: 4, A-C: 8, A-D: 11
+B-C: 2, B-D: 7, B-E: 6
+C-D: 1, C-E: 5
+D-E: 9
+
+Solution using Kruskal's:
+1. Sort edges: C-D(1), B-C(2), A-B(4), C-E(5), B-E(6), B-D(7), A-C(8), D-E(9), A-D(11)
+2. Add C-D (1 km) ✓
+3. Add B-C (2 km) ✓
+4. Add A-B (4 km) ✓
+5. Add C-E (5 km) ✓
+
+MST: A-B(4), B-C(2), C-D(1), C-E(5)
+Total: 12 km of cable needed
+
+Savings: Instead of connecting all pairs (would need much more),
+we only need 12 km to connect all 5 cities!
+```
+
+### Performance Analysis
+
+**For a graph with V vertices and E edges:**
+
+```
+Best Case: O(E log E)
+- All edges sorted quickly
+- Union-Find operations nearly O(1) with optimizations
+
+Worst Case: O(E log E)
+- Dominated by sorting step
+- Even if all edges need to be checked
+
+Average Case: O(E log E)
+- With early stopping, typically process < E edges
+- Stops after finding V-1 edges
+
+Space: O(V + E)
+- O(V) for Union-Find structure
+- O(E) for edge storage
+```
+
+**Optimization in Implementation:**
+```kotlin
+// Early stopping when MST is complete
+if (mstEdges.size == vertices.size - 1) {
+    break
+}
+// No need to check remaining edges!
+```
+
+This optimization is significant when the graph has many more edges than needed for the MST.
+
+---
+
 When you add a new `.kt` file implementing an algorithm:
 1. Create a section in this README
 2. Provide: description, complexities, visualization (ASCII + Mermaid), example
@@ -1822,7 +2244,7 @@ When you add a new `.kt` file implementing an algorithm:
 Suggested future additions:
 - Merge Sort
 - Heap Sort
-- BFS / DFS
+- Prim's Algorithm (alternative MST)
 - Dijkstra's Algorithm
 - Dynamic Programming examples
 
