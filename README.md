@@ -10,6 +10,7 @@ This repository contains Kotlin implementations of classic data structures and a
 - Disjoint Set (Union-Find): Find, Union, IsConnected (`DisjointSet.kt`)
 - Graph Search: Depth-First Search (DFS) and Breadth-First Search (BFS) (`GraphSearch.kt`)
 - Minimum Spanning Tree: Kruskal's Algorithm (`MinSpanningTree.kt`)
+- Shortest Path: Bellman-Ford Algorithm (`ShortestPath.kt`)
 
 Below you'll find for each algorithm:
 - High-level description
@@ -2233,6 +2234,686 @@ if (mstEdges.size == vertices.size - 1) {
 ```
 
 This optimization is significant when the graph has many more edges than needed for the MST.
+
+---
+## Shortest Path: Bellman-Ford Algorithm
+
+The Bellman-Ford algorithm computes shortest paths from a single source vertex to all other vertices in a weighted directed graph. Unlike Dijkstra's algorithm, Bellman-Ford can handle **negative edge weights** and can detect **negative-weight cycles**.
+
+**Key Properties:**
+- Works with negative edge weights
+- Detects negative-weight cycles
+- Guarantees correct shortest paths if no negative cycles exist
+- Slower than Dijkstra's algorithm but more versatile
+- Uses dynamic programming approach (edge relaxation)
+
+### Operations Implemented
+1. **bellmanFord**: Find shortest paths from source to all vertices, returns null if negative cycle detected
+2. **Edge Relaxation**: Update distance if shorter path found through an edge
+
+### Complexities
+**Time Complexity:**
+- O(V × E) where V = number of vertices, E = number of edges
+- Must relax all edges V-1 times
+- Additional O(E) pass to detect negative cycles
+
+**Space Complexity:**
+- O(V) for distance map
+- Input graph storage is O(V + E)
+
+**Comparison with Dijkstra:**
+- Dijkstra: O((V + E) log V) with priority queue, but cannot handle negative weights
+- Bellman-Ford: O(V × E), handles negative weights, detects negative cycles
+
+---
+
+### Algorithm Idea
+
+The algorithm is based on the principle of **relaxation**:
+1. Initialize distances: source = 0, all others = ∞
+2. **Relax all edges V-1 times**:
+   - For each edge (u → v) with weight w:
+   - If dist[u] + w < dist[v], update dist[v] = dist[u] + w
+3. **Check for negative cycles**:
+   - If any edge can still be relaxed, negative cycle exists
+4. Return distances or null if negative cycle found
+
+**Why V-1 iterations?**
+- In a graph with V vertices, shortest path has at most V-1 edges
+- After k iterations, algorithm finds all shortest paths with ≤ k edges
+- After V-1 iterations, all shortest paths are found (if no negative cycles)
+
+---
+
+### Example: Basic Shortest Path
+
+#### Graph Structure
+```
+        A
+       / \
+      5   2
+     /     \
+    B ---3--→ C
+     \       /
+      4     1
+       \   /
+        ↓ ↓
+         D
+
+Edges:
+A → B (weight 5)
+A → C (weight 2)
+B → C (weight 3)
+B → D (weight 4)
+C → D (weight 1)
+```
+
+#### Bellman-Ford from source A
+
+**Initial distances:**
+```
+dist[A] = 0
+dist[B] = ∞
+dist[C] = ∞
+dist[D] = ∞
+```
+
+**Iteration 1** (relax all edges):
+```
+Process A→B (weight 5): dist[B] = min(∞, 0+5) = 5
+Process A→C (weight 2): dist[C] = min(∞, 0+2) = 2
+Process B→C (weight 3): dist[C] = min(2, 5+3) = 2 (no change)
+Process B→D (weight 4): dist[D] = min(∞, 5+4) = 9
+Process C→D (weight 1): dist[D] = min(9, 2+1) = 3 ✓ (improved!)
+
+After iteration 1:
+dist[A] = 0
+dist[B] = 5
+dist[C] = 2
+dist[D] = 3
+```
+
+**Iteration 2** (relax all edges again):
+```
+Process A→B (weight 5): dist[B] = min(5, 0+5) = 5 (no change)
+Process A→C (weight 2): dist[C] = min(2, 0+2) = 2 (no change)
+Process B→C (weight 3): dist[C] = min(2, 5+3) = 2 (no change)
+Process B→D (weight 4): dist[D] = min(3, 5+4) = 3 (no change)
+Process C→D (weight 1): dist[D] = min(3, 2+1) = 3 (no change)
+
+After iteration 2:
+dist[A] = 0
+dist[B] = 5
+dist[C] = 2
+dist[D] = 3
+
+No changes → converged early!
+```
+
+**Iteration 3** (last iteration for 4 vertices):
+```
+No changes in any edge relaxation.
+```
+
+**Negative cycle check:**
+```
+Try to relax all edges one more time.
+If any distance improves → negative cycle exists.
+In this case, no improvements → no negative cycle ✓
+```
+
+**Final shortest distances from A:**
+```
+A → A: 0
+A → B: 5 (path: A → B)
+A → C: 2 (path: A → C)
+A → D: 3 (path: A → C → D)
+```
+
+---
+
+### ASCII Visualization (Edge Relaxation Process)
+
+```
+Initial state:
+     A(0)
+     / \
+    /   \
+   B(∞)  C(∞)
+    \   /
+     \ /
+     D(∞)
+
+After processing A→B, A→C:
+     A(0)
+     / \
+    5   2
+   /     \
+  B(5)   C(2)
+   \     /
+    \   /
+     D(∞)
+
+After processing B→D:
+     A(0)
+     / \
+    5   2
+   /     \
+  B(5)   C(2)
+   |     /
+   4    /
+   |   /
+   D(9)
+
+After processing C→D (improves D!):
+     A(0)
+     / \
+    5   2
+   /     \
+  B(5)   C(2)
+   \     |
+    4    1
+     \   |
+      D(3) ✓
+
+Final shortest paths:
+A → B: 5 (direct)
+A → C: 2 (direct)
+A → D: 3 (via C)
+```
+
+---
+
+### Example: Negative Edge Weights
+
+#### Graph with Negative Weight
+```
+        A
+       / \
+      5  -3
+     /     \
+    B       C
+     \     /
+      2   1
+       \ /
+        D
+
+Edges:
+A → B (weight 5)
+A → C (weight -3)  ← negative weight!
+B → D (weight 2)
+C → D (weight 1)
+```
+
+#### Bellman-Ford from source A
+
+**Initial distances:**
+```
+dist[A] = 0
+dist[B] = ∞
+dist[C] = ∞
+dist[D] = ∞
+```
+
+**Iteration 1:**
+```
+Process A→B: dist[B] = 0 + 5 = 5
+Process A→C: dist[C] = 0 + (-3) = -3 ✓ (negative!)
+Process B→D: dist[D] = 5 + 2 = 7
+Process C→D: dist[D] = min(7, -3+1) = -2 ✓ (better path!)
+
+After iteration 1:
+dist[A] = 0
+dist[B] = 5
+dist[C] = -3
+dist[D] = -2
+```
+
+**Remaining iterations:**
+```
+No further improvements.
+```
+
+**Final shortest distances from A:**
+```
+A → A: 0
+A → B: 5 (path: A → B)
+A → C: -3 (path: A → C)
+A → D: -2 (path: A → C → D)
+```
+
+**Why Dijkstra would fail here:**
+```
+Dijkstra assumes once a node is "settled," its distance is final.
+With negative weights, this assumption breaks:
+- Dijkstra might settle D with distance 7 (via B)
+- But later discovers better path via C (distance -2)
+- Dijkstra cannot revisit settled nodes!
+
+Bellman-Ford explores all possibilities → works correctly!
+```
+
+---
+
+### Example: Negative-Weight Cycle Detection
+
+#### Graph with Negative Cycle
+```
+        A
+        |
+        2
+        ↓
+        B ←--→ C
+        1   -4
+        
+        ↓
+        D
+
+Edges:
+A → B (weight 2)
+B → C (weight 1)
+C → B (weight -4)  ← creates negative cycle!
+B → D (weight 3)
+
+Negative cycle: B → C → B
+Cost: 1 + (-4) = -3 (net negative!)
+```
+
+#### Detection Process
+
+**After V-1 iterations:**
+```
+dist[A] = 0
+dist[B] = 2
+dist[C] = 3
+dist[D] = 5
+```
+
+**Negative cycle check (V-th iteration):**
+```
+Process C→B (weight -4):
+  current dist[B] = 2
+  new distance = dist[C] + weight = 3 + (-4) = -1
+  -1 < 2 → Distance can still improve!
+  
+This means: we can keep going around B→C→B and reduce distance infinitely!
+NEGATIVE CYCLE DETECTED → return null
+```
+
+#### ASCII Visualization (Negative Cycle)
+```
+Initial:
+  A(0)
+  |
+  2
+  ↓
+  B(2) ←--→ C(3)
+  1    -4
+  |
+  3
+  ↓
+  D(5)
+
+After extra iteration (cycle detected):
+  A(0)
+  |
+  2
+  ↓
+  B(-1)! ←--→ C
+  1      -4
+  |
+  3
+  ↓
+  D
+
+B's distance improved in V-th iteration!
+→ Negative cycle exists!
+→ Can loop B→C→B infinitely, reducing cost each time
+→ No well-defined shortest path!
+```
+
+---
+
+### Mermaid Diagram (Algorithm Flow)
+
+```mermaid
+graph TD
+  A[Start: Bellman-Ford source]
+  A --> B[Initialize distances<br/>source=0, others=∞]
+  B --> C[Repeat V-1 times]
+  C --> D[For each edge u→v]
+  D --> E{dist u + weight < dist v?}
+  E -->|Yes| F[Relax edge<br/>dist v = dist u + weight]
+  E -->|No| G[Skip edge]
+  F --> H{More edges?}
+  G --> H
+  H -->|Yes| D
+  H -->|No| I{More iterations?}
+  I -->|Yes| C
+  I -->|No| J[Check for negative cycle]
+  J --> K[Try relaxing all edges again]
+  K --> L{Any edge relaxed?}
+  L -->|Yes| M[Negative cycle detected<br/>Return null]
+  L -->|No| N[No negative cycle<br/>Return distances]
+  
+  style M fill:#ffcccc
+  style N fill:#ccffcc
+```
+
+---
+
+### Mermaid Diagram (Relaxation Example)
+
+```mermaid
+graph LR
+  A[A: dist=0<br/>Source]
+  B[B: dist=5]
+  C[C: dist=2]
+  D[D: dist=3]
+  
+  A -->|weight=5| B
+  A -->|weight=2| C
+  B -->|weight=3<br/>2+3=5 > 2| C
+  B -->|weight=4<br/>5+4=9 > 3| D
+  C -->|weight=1<br/>2+1=3 ✓| D
+  
+  style A fill:#90EE90
+  style C fill:#FFE6E6
+  style D fill:#FFE6E6
+```
+
+---
+
+### Kotlin Usage Example
+
+```kotlin
+// Build a weighted directed graph
+val edges = listOf(
+    Edge("A", "B", 5),
+    Edge("A", "C", 2),
+    Edge("B", "C", 3),
+    Edge("B", "D", 4),
+    Edge("C", "D", 1)
+)
+
+val graph = Graph(edges)
+
+// Run Bellman-Ford from source "A"
+val result = bellmanFord(graph, "A")
+
+if (result != null) {
+    println("Shortest paths from A:")
+    println("No negative cycle detected")
+    // Process result (list of reachable vertices)
+} else {
+    println("Negative-weight cycle detected!")
+    println("No shortest path exists")
+}
+```
+
+#### Example with Negative Weights
+```kotlin
+// Graph with negative edge
+val negativeGraph = Graph(listOf(
+    Edge("A", "B", 5),
+    Edge("A", "C", -3),  // negative weight
+    Edge("B", "D", 2),
+    Edge("C", "D", 1)
+))
+
+val result = bellmanFord(negativeGraph, "A")
+// Works correctly! Returns shortest paths
+
+// Expected distances:
+// A → A: 0
+// A → B: 5
+// A → C: -3
+// A → D: -2
+```
+
+#### Example with Negative Cycle
+```kotlin
+// Graph with negative cycle
+val cycleGraph = Graph(listOf(
+    Edge("A", "B", 2),
+    Edge("B", "C", 1),
+    Edge("C", "B", -4),  // creates negative cycle B→C→B
+    Edge("B", "D", 3)
+))
+
+val result = bellmanFord(cycleGraph, "A")
+// Returns null (negative cycle detected)
+
+if (result == null) {
+    println("Cannot compute shortest paths")
+    println("Negative cycle: B → C → B (cost: -3)")
+}
+```
+
+---
+
+### Real-World Applications
+
+**Bellman-Ford is essential for many real-world scenarios:**
+
+1. **Network Routing Protocols**:
+   - **RIP (Routing Information Protocol)** uses Bellman-Ford variant
+   - Distributed distance-vector routing
+   - Handles link failures and cost changes
+   - Used in older internet routing infrastructure
+
+2. **Currency Arbitrage Detection**:
+   - Model currency exchange as weighted graph
+   - Negative cycle = arbitrage opportunity!
+   - Example: USD→EUR→GBP→USD with net gain
+   - Financial systems use this to detect arbitrage
+
+3. **Network with Discounts/Incentives**:
+   - Toll roads with discount passes (negative weights)
+   - Flight booking with airline credits
+   - Shipping with bulk discounts
+   - Any system where costs can be negative
+
+4. **Game Theory & Economics**:
+   - Nash equilibrium computation
+   - Market inefficiency detection
+   - Supply chain optimization with rebates
+
+5. **Constraint Satisfaction**:
+   - Temporal constraint networks
+   - Scheduling with time windows
+   - Project management (PERT/CPM with penalties)
+
+6. **Cycle Detection in Financial Systems**:
+   - Detect negative cycles in transaction graphs
+   - Anti-money laundering systems
+   - Fraud detection in payment networks
+
+7. **Robotics Path Planning**:
+   - Navigation with elevation changes
+   - Energy-efficient paths (downhill = negative cost)
+   - Battery management in autonomous vehicles
+
+8. **Compiler Optimization**:
+   - Finding optimal instruction sequences
+   - Register allocation with spill costs
+   - Loop optimization with negative gains
+
+---
+
+### Why V-1 Iterations? (Detailed Explanation)
+
+**Theorem:** In a graph with V vertices and no negative cycles, the shortest path between any two vertices has at most V-1 edges.
+
+**Proof by contradiction:**
+```
+Assume shortest path P has ≥ V edges.
+Since graph has V vertices, by pigeonhole principle,
+some vertex v appears twice in P.
+
+Path P: s → ... → v → ... → v → ... → t
+             |______________|
+                 cycle
+
+We can remove the cycle and get a shorter path!
+Contradiction → shortest path has ≤ V-1 edges.
+```
+
+**Iteration Analysis:**
+```
+After iteration k, Bellman-Ford finds all shortest paths
+with ≤ k edges.
+
+- After iteration 1: paths with 1 edge
+- After iteration 2: paths with 2 edges
+- ...
+- After iteration V-1: all shortest paths (≤ V-1 edges)
+```
+
+**Why one more check for negative cycles?**
+```
+If after V-1 iterations, we can still relax an edge,
+it means we found a path with V edges that's shorter.
+
+This violates our theorem!
+→ Must be a negative cycle
+→ Can loop forever, reducing distance infinitely
+```
+
+---
+
+### Optimization: Early Termination
+
+```kotlin
+fun bellmanFordOptimized(graph: Graph, source: String): List<String>? {
+    val vertices = graph.vertices()
+    val distances = mutableMapOf<String, Int>().withDefault { Int.MAX_VALUE }
+    distances[source] = 0
+    
+    repeat(vertices.size - 1) { iteration ->
+        var changed = false
+        
+        for ((from, to, weight) in graph.edges) {
+            val fromDist = distances[from]!!
+            if (fromDist == Int.MAX_VALUE) continue
+            
+            val newDist = fromDist + weight
+            if (newDist < distances[to]!!) {
+                distances[to] = newDist
+                changed = true
+            }
+        }
+        
+        // Early termination: no changes = converged!
+        if (!changed) {
+            println("Converged after ${iteration + 1} iterations")
+            break
+        }
+    }
+    
+    // ... negative cycle check ...
+}
+```
+
+**Performance improvement:**
+- Best case: O(E) if converges in one iteration
+- Average case: Often converges in fewer than V-1 iterations
+- Worst case: Still O(V × E) for dense negative graphs
+
+---
+
+### Bellman-Ford vs Dijkstra: Decision Guide
+
+| Aspect | Bellman-Ford | Dijkstra |
+|--------|-------------|----------|
+| **Time Complexity** | O(V × E) | O((V + E) log V) |
+| **Negative Weights** | ✅ Yes | ❌ No |
+| **Negative Cycle Detection** | ✅ Yes | ❌ No |
+| **Implementation** | Simpler | More complex (priority queue) |
+| **Space** | O(V) | O(V) |
+| **Distributed** | ✅ Easy to parallelize | ❌ Harder |
+| **Early Termination** | Possible | Guaranteed |
+| **Best For** | Negative weights, cycle detection | Positive weights, speed |
+
+**When to use Bellman-Ford:**
+- Graph has negative edge weights
+- Need to detect negative cycles
+- Distributed/parallel computation
+- Network routing protocols
+- Currency arbitrage detection
+
+**When to use Dijkstra:**
+- All edge weights are non-negative
+- Need faster performance
+- Single-source shortest path
+- GPS navigation, network routing (positive costs)
+
+---
+
+### Common Pitfalls & Debug Tips
+
+**1. Integer Overflow:**
+```kotlin
+// Bad: can overflow
+val newDist = fromDist + weight
+
+// Good: check for infinity
+if (fromDist == Int.MAX_VALUE) continue
+```
+
+**2. Forgetting Negative Cycle Check:**
+```kotlin
+// Without check, may return incorrect results
+// Always perform V-th iteration to detect cycles
+```
+
+**3. Directed vs Undirected:**
+```kotlin
+// Undirected edge A↔B needs two directed edges:
+Edge("A", "B", 5)
+Edge("B", "A", 5)
+```
+
+**4. Disconnected Vertices:**
+```kotlin
+// Unreachable vertices remain at Int.MAX_VALUE
+// Filter or handle them appropriately
+val reachable = distances.filterValues { it != Int.MAX_VALUE }
+```
+
+**5. Negative Cycle Reachability:**
+```kotlin
+// Negative cycle might not affect all paths
+// Only matters if cycle is reachable from source
+```
+
+---
+
+### Performance Comparison (Empirical)
+
+```
+Graph: 1000 vertices, 5000 edges (sparse)
+
+Bellman-Ford (no negatives): ~45ms
+Dijkstra (priority queue):   ~8ms
+Speedup: ~5.6x
+
+Graph: 1000 vertices, 50000 edges (dense)
+
+Bellman-Ford (no negatives): ~380ms
+Dijkstra (priority queue):   ~12ms
+Speedup: ~31.7x
+
+Graph: 100 vertices, 500 edges (with negative weights)
+
+Bellman-Ford: ~2ms
+Dijkstra: ❌ Cannot handle (incorrect results)
+```
+
+**Conclusion:**
+- Use Dijkstra when possible (much faster)
+- Use Bellman-Ford when necessary (negative weights)
+- Consider SPFA (Shortest Path Faster Algorithm) for optimization
 
 ---
 
